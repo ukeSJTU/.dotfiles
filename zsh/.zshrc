@@ -36,6 +36,7 @@ zplug "zsh-users/zsh-syntax-highlighting"
 zplug "zsh-users/zsh-autosuggestions"
 zplug "plugins/git", from:oh-my-zsh
 zplug "plugins/alias-tips", from:oh-my-zsh
+zplug "plugins/common-aliases", from:oh-my-zsh
 
 # Add a bunch more of your favorite packages!
 
@@ -62,3 +63,7 @@ chruby ruby-3.3.5
 
 # Starship to customize the prompt
 eval "$(starship init zsh)"
+
+# Load Alias zsh
+# I load it here to make sure that the aliases are loaded after the plugins
+[ -f "$HOME/.config/zsh/aliases.zsh" ] && source "$HOME/.config/zsh/aliases.zsh"
