@@ -37,7 +37,7 @@ fh() {
 
 # Tmux
 # Always work in a tmux session if Tmux is installed
-if which tmux >/dev/null 2>&1; then
+if command -v tmux >/dev/null 2>&1; then
     # Check if the current environment is suitable for tmux
     if [[ -z "$TMUX" &&
         $TERM != "screen-256color" &&
@@ -48,7 +48,14 @@ if which tmux >/dev/null 2>&1; then
         -z "$VIM" &&
         -z "$INTELLIJ_ENVIRONMENT_READER" ]]; then
         # Try to attach to the default tmux session, or create a new one if it doesn't exist
-        tmux attach -t default || tmux new -s default
-        exit
+        if tmux attach -t default 2>/dev/null; then
+            # If attach succeeds, do nothing
+            :
+        else
+            # If attach fails, create a new session
+            tmux new -s default
+            # Exit the shell only if the tmux session is terminated (not detached)
+            exit
+        fi
     fi
 fi
