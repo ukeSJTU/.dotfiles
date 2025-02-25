@@ -62,5 +62,8 @@ export PATH="$PATH:~/.console-ninja/.bin"
 # pyenv
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PATH:$PYENV_ROOT/bin"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
+# Check if pyenv is installed before initializing
+if which pyenv >/dev/null 2>&1; then
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
+fi
