@@ -45,7 +45,7 @@ install_custom_formulae() {
                 warning "$formula is already installed"
             else
                 info "Installing $formula..."
-                brew install "$formula"
+                dry_run brew install "$formula"
             fi
         done
     fi
@@ -89,7 +89,7 @@ install_custom_casks() {
                 warning "$cask is already installed"
             else
                 info "Installing $cask..."
-                brew install --cask "$cask"
+                dry_run brew install --cask "$cask"
             fi
         done
     fi
@@ -101,7 +101,7 @@ run_brew_bundle() {
         read -p "Run Brew Bundle to install packages from Brewfile? [y/n]: " choice
         if [[ "$choice" == "y" ]]; then
             info "Running Brew Bundle to install packages from Brewfile..."
-            brew bundle --file="$SCRIPT_DIR/../Brewfile"
+            dry_run brew bundle --file="$SCRIPT_DIR/../Brewfile"
         else
             info "Skipping Brew Bundle"
         fi

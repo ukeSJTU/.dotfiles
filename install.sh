@@ -1,11 +1,37 @@
 #!/bin/bash
 
+# Initialize dry-run mode
+DRY_RUN=false
+
+# Parse command line arguments
+while getopts "d" opt; do
+    case $opt in
+    d) DRY_RUN=true ;;
+    *)
+        echo "Usage: $0 [-d]" >&2
+        exit 1
+        ;;
+    esac
+done
+
 # Get the absolute path of the directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Dry-run helper function
+dry_run() {
+    if $DRY_RUN; then
+        info "[DRY-RUN] $*"
+    else
+        $*
+    fi
+}
+
+echo $SCRIPT_DIR
 
 . $SCRIPT_DIR/scripts/utils.sh
 . $SCRIPT_DIR/scripts/prerequisites.sh
 . $SCRIPT_DIR/scripts/symlinks.sh
+. $SCRIPT_DIR/scripts/brew-install-custom.sh
 
 info "Dotfiles installation initialized..."
 
