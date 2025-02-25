@@ -69,3 +69,7 @@ function y() {
     fi
     rm -f -- "$tmp"
 }
+
+# set bash-like key bindings
+autoload edit-command-line; zle -N edit-command-line
+bindkey "^X^E" edit-command-line

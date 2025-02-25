@@ -15,7 +15,7 @@ export http_proxy=http://127.0.0.1:7890
 export all_proxy=socks5://127.0.0.1:7890
 
 # Themes (onedark or nord)
-# export TMUX_THEME="nord"
+export TMUX_THEME="onedark"
 # export NVIM_THEME="nord"
 export STARSHIP_THEME="onedark"
 # export WEZTERM_THEME="nord"
