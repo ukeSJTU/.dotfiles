@@ -22,3 +22,14 @@ warning() {
     printf "%s==> %s%s\n" "$yellow" "$1" "$default_color"
 }
 
+log() {
+    # Logs messages to a file with timestamp
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1" >>"$LOG_FILE"
+}
+
+DATE=$(date +%Y-%m-%d)
+TIME=$(date +%H-%M-%S)
+
+# Optionally handle redirection for logs
+LOG_FILE="${HOME}/.dotfiles/.logs/setup-${DATE}-${TIME}.log"
+# echo $LOG_FILE

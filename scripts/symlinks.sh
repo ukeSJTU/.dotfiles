@@ -1,49 +1,78 @@
 #!/bin/bash
 
 # Get the absolute path of the directory where the script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$(dirname "$0")/../symlinks.conf"
 
-CONFIG_FILE="$SCRIPT_DIR/../symlinks.conf"
+# . "$SCRIPT_DIR/utils.sh" # Source utility functions
 
-. $SCRIPT_DIR/utils.sh
+. $(dirname "$0")/utils.sh
 
 # Check if configuration file exists
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Configuration file not found: $CONFIG_FILE"
+    error "Configuration file not found: $CONFIG_FILE"
     exit 1
 fi
 
+# Create symbolic links
 create_symlinks() {
     info "Creating symbolic links..."
 
     # Read dotfile links from the config file
     while IFS=: read -r source target || [ -n "$source" ]; do
-
-        # Skip empty or invalid lines in the config file
+        # Skip empty or invalid lines
         if [[ -z "$source" || -z "$target" || "$source" == \#* ]]; then
             continue
         fi
 
-        # Evaluate variables
+        # Evaluate variables (support for environment variables, etc.)
         source=$(eval echo "$source")
         target=$(eval echo "$target")
 
         # Check if the source file exists
         if [ ! -e "$source" ]; then
-            error "Error: Source file '$source' not found. Skipping link creation for '$target'."
+            error "Source file '$source' not found. Skipping link creation for '$target'."
             continue
         fi
 
-        # Check if the symbolic link already exists
+        # Check if the target is a symlink and skip if it already exists
         if [ -L "$target" ]; then
             warning "Symbolic link already exists: $target"
         elif [ -f "$target" ]; then
-            warning "File already exists: $target"
+            # If target file exists, check for file content differences
+            if cmp -s "$source" "$target"; then
+                info "Target file '$target' is identical to the source. Skipping."
+            else
+                # Prompt user for action if the content differs
+                info "Target file '$target' exists and differs from source."
+                read -p "Do you want to overwrite it? (y/n) or c to compare: " choice
+                case "$choice" in
+                y | Y)
+                    # Overwrite the file
+                    cp -f "$source" "$target"
+                    success "Overwritten $target"
+                    ;;
+                c | C)
+                    # Show file differences
+                    diff -u "$source" "$target"
+                    read -p "Do you want to overwrite it after seeing the difference? (y/n): " choice2
+                    if [[ "$choice2" =~ ^[yY]$ ]]; then
+                        cp -f "$source" "$target"
+                        success "Overwritten $target"
+                    else
+                        info "Skipped overwriting $target"
+                    fi
+                    ;;
+                *)
+                    info "Skipped overwriting $target"
+                    ;;
+                esac
+            fi
+        elif [ -d "$target" ]; then
+            warning "Target is a directory: $target"
         else
-            # Extract the directory portion of the target path
+            # Create the directory if it doesn't exist
             target_dir=$(dirname "$target")
-
-            # Check if the target directory exists, and if not, create it
             if [ ! -d "$target_dir" ]; then
                 mkdir -p "$target_dir"
                 info "Created directory: $target_dir"
@@ -56,22 +85,20 @@ create_symlinks() {
     done <"$CONFIG_FILE"
 }
 
+# Delete symbolic links or files
 delete_symlinks() {
     info "Deleting symbolic links..."
 
     while IFS=: read -r _ target || [ -n "$target" ]; do
-
-        # Skip empty and invalid lines
         if [[ -z "$target" ]]; then
             continue
         fi
 
-        # Evaluate variables
+        # Evaluate the target path
         target=$(eval echo "$target")
 
         # Check if the symbolic link or file exists
         if [ -L "$target" ] || { [ "$include_files" == true ] && [ -f "$target" ]; }; then
-            # Remove the symbolic link or file
             rm -rf "$target"
             success "Deleted: $target"
         else
@@ -80,27 +107,26 @@ delete_symlinks() {
     done <"$CONFIG_FILE"
 }
 
-# Parse arguments
-if [ "$(basename "$0")" = "$(basename "${BASH_SOURCE[0]}")" ]; then
-    case "$1" in
-    "--create")
-        create_symlinks
-        ;;
-    "--delete")
-        if [ "$2" == "--include-files" ]; then
-            include_files=true
+# Dry run mode (simulated actions without making any changes)
+dry_run() {
+    info "Dry run mode: No changes will be made."
+    info "The following actions will be executed:"
+    while IFS=: read -r source target || [ -n "$source" ]; do
+        if [[ -z "$source" || -z "$target" || "$source" == \#* ]]; then
+            continue
         fi
-        delete_symlinks
-        ;;
-    "--help")
-        # Display usage/help message
-        echo "Usage: $0 [--create | --delete [--include-files] | --help]"
-        ;;
-    *)
-        # Display an error message for unknown arguments
-        error "Error: Unknown argument '$1'"
-        error "Usage: $0 [--create | --delete [--include-files] | --help]"
-        exit 1
-        ;;
-    esac
+
+        source=$(eval echo "$source")
+        target=$(eval echo "$target")
+        info "Create symlink: $source -> $target"
+    done <"$CONFIG_FILE"
+}
+
+# If called from setup.sh, execute the create_symlinks function
+if [ "$1" == "--create" ]; then
+    create_symlinks
+elif [ "$1" == "--delete" ]; then
+    delete_symlinks
+elif [ "$1" == "--dry-run" ]; then
+    dry_run
 fi
