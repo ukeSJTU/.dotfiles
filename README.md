@@ -165,3 +165,9 @@ To tailor the dotfiles for your own use:
 
 1. 编辑各自目录中的配置文件。
 2. 修改 `symlinks.conf` 以添加、删除或更改符号链接映射。
+
+### Q&A
+
+#### 1
+
+symlinks.conf 中的 tmux 前两个看起来是重复的，这是因为 tmux 不同版本读区配置文件不同。3.1 版本之前的版本是读取~/.tmux.conf，3.1 版本之后的版本是读取~/.config/tmux/tmux.conf。为了兼容性，所以两个都写上了。
