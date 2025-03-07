@@ -28,7 +28,6 @@ else
     export EDITOR='nvim'
 fi
 
-# export EDITOR="nvim"
 export VISUAL="nvim"
 
 # Add /usr/local/bin to the beginning of the PATH environment variable.
@@ -41,12 +40,8 @@ export PATH="$PATH:/opt/homebrew/opt/postgresql@15/bin"
 # wezterm
 export PATH="$PATH:/Applications/WezTerm.app/Contents/MacOS"
 
-# nvm
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
 # pnpm
-export PNPM_HOME="/Users/uke/Library/pnpm"
+export PNPM_HOME="$HOME/Library/pnpm"
 case ":$PATH:" in
 *":$PNPM_HOME:"*) ;;
 *) export PATH="$PNPM_HOME:$PATH" ;;

@@ -1,6 +1,3 @@
-# zsh Options
-setopt HIST_IGNORE_ALL_DUPS
-
 # Load Custom zsh
 [ -f "$HOME/.config/zsh/custom.zsh" ] && source "$HOME/.config/zsh/custom.zsh"
 
@@ -57,13 +54,15 @@ zplug load
 # End of zplug loading #
 ########################
 
-source /opt/homebrew/opt/chruby/share/chruby/chruby.sh
-source /opt/homebrew/opt/chruby/share/chruby/auto.sh
-chruby ruby-3.3.5
-
-# Starship to customize the prompt
-eval "$(starship init zsh)"
+# nvm
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/.nvm")"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
 # Load Alias zsh
 # I load it here to make sure that the aliases are loaded after the plugins
 [ -f "$HOME/.config/zsh/aliases.zsh" ] && source "$HOME/.config/zsh/aliases.zsh"
+
+# Use the local zshrc file if it exists
+if [[ -f "$HOME/.zshrc.local" ]]; then
+    source "$HOME/.zshrc.local"
+fi

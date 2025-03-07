@@ -35,10 +35,9 @@ fh() {
     eval $( ([ -n "$ZSH_NAME" ] && fc -l 1 || history) | fzf +s --tac | sed 's/ *[0-9]* *//')
 }
 
-# Tmux
-# Always work in a tmux session if Tmux is installed
+# Tmux Intelligent Session Management
 if command -v tmux >/dev/null 2>&1; then
-    # Check if the current environment is suitable for tmux
+    # Check if the current environment is suitable for running tmux
     if [[ -z "$TMUX" &&
         $TERM != "screen-256color" &&
         $TERM != "screen" &&
@@ -47,16 +46,43 @@ if command -v tmux >/dev/null 2>&1; then
         -z "$EMACS" &&
         -z "$VIM" &&
         -z "$INTELLIJ_ENVIRONMENT_READER" ]]; then
-        # Try to attach to the default tmux session, or create a new one if it doesn't exist
-        if tmux attach -t default 2>/dev/null; then
-            # If attach succeeds, do nothing
-            :
-        else
-            # If attach fails, create a new session
-            tmux new -s default
-            # Exit the shell only if the tmux session is terminated (not detached)
+
+        # Check if tmux should be forcibly started
+        if [[ -n "$FORCE_TMUX" ]] || [[ -n "$SSH_CONNECTION" ]]; then
+            # Determine session name
+            if [[ -n "$TMUX_SESSION_NAME" ]]; then
+                SESSION_NAME="$TMUX_SESSION_NAME"
+            elif [[ -n "$SSH_CONNECTION" ]]; then
+                SESSION_NAME="default-$(whoami)"
+            else
+                SESSION_NAME="local-$(whoami)"
+            fi
+
+            # Try to attach to an existing session, or create a new one if it doesn't exist
+            if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+                # Session exists, attempt to attach
+                tmux attach -t "$SESSION_NAME"
+            else
+                # Session does not exist, create a new session
+                tmux new-session -s "$SESSION_NAME"
+
+                # Set session timeout for automatic termination (if specified)
+                if [[ -n "$TMUX_IDLE_TIMEOUT" ]]; then
+                    tmux set-option -t "$SESSION_NAME" destroy-unattached on
+                    tmux set-option -t "$SESSION_NAME" destroy-unattached-timeout "$TMUX_IDLE_TIMEOUT"
+                fi
+            fi
+
+            # Check the exit behavior environment variable
+            if [[ "$TMUX_EXIT_BEHAVIOR" == "kill" ]]; then
+                # If set to "kill", terminate the session
+                tmux kill-session -t "$SESSION_NAME"
+            fi
+
+            # Exit the current shell
             exit
         fi
+        # If running in a local terminal and tmux is not forced, do nothing
     fi
 fi
 
@@ -70,6 +96,6 @@ function y() {
     rm -f -- "$tmp"
 }
 
-# set bash-like key bindings
-autoload edit-command-line; zle -N edit-command-line
-bindkey "^X^E" edit-command-line
+# zsh Options
+setopt HIST_IGNORE_ALL_DUPS
+setopt AUTO_CD

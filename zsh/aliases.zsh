@@ -5,13 +5,12 @@ alias suspend='sudo pm-suspend'
 alias sleep='pmset sleepnow'
 alias c='clear'
 alias e='exit'
+alias r="source ~/.zshrc"
+alias reload-env="source ~/.zshenv"
 
 # Folders
 alias doc="$HOME/Documents"
 alias dow="$HOME/Downloads"
-
-# Ranger
-alias r=". ranger"
 
 # Better ls
 alias ls="ls --color=auto"

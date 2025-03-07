@@ -1,104 +1,92 @@
 #!/bin/bash
+#
+# Usage: setup.sh [OPTIONS]
+#
+# Options:
+#   -h, --help       Show this help message and exit.
+#   -f, --force      Force overwrite of conflicting files without prompt.
+#   -d, --dry-run    Run in dry-run mode, showing what would be done.
+#
+# This script checks required dependencies and sets up symbolic links as defined in symlinks.conf.
 
-# Get the absolute path of the directory where the script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. "$SCRIPT_DIR/scripts/utils.sh" # Source utility functions
+# Display usage information
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
 
-# Default options
-DRY_RUN=false
-HELP=false
-INSTALL_PREREQUISITES=false
-INSTALL_APPS=false
-CONFIGURE_SYMLINKS=false
+Options:
+  -h, --help       Show this help message and exit.
+  -f, --force      Force overwrite of conflicting files without prompt.
+  -d, --dry-run    Run in dry-run mode, showing what would be done without making changes.
 
-# Functions for each phase
-install_prerequisites() {
-    info "Running prerequisites..."
-    bash "$SCRIPT_DIR/scripts/prerequisites.sh"
+This script sets up symbolic links for dotfiles as defined in symlinks.conf.
+It also checks for required applications.
+EOF
 }
 
-install_apps() {
-    info "Running app installations..."
-    bash "$SCRIPT_DIR/scripts/install.sh"
-}
+# Default flags
+FORCE=0
+DRY_RUN=0
 
-configure_symlinks() {
-    info "Setting up symbolic links..."
-    bash "$SCRIPT_DIR/scripts/symlinks.sh" --create
-}
-
-dry_run() {
-    info "Dry run enabled. No changes will be made."
-    info "The following actions will be executed:"
-    info "1. Install prerequisites"
-    bash "$SCRIPT_DIR/scripts/prerequisites.sh" --dry-run
-    info "2. Install apps"
-    bash "$SCRIPT_DIR/scripts/install.sh" --dry-run
-    info "3. Create symbolic links"
-    bash "$SCRIPT_DIR/scripts/symlinks.sh" --dry-run
-}
-
-show_help() {
-    echo "Usage: $0 [OPTIONS]"
-    echo
-    echo "Options:"
-    echo "  -d, --dry-run               Show what will be done without making any changes"
-    echo "  -h, --help                  Show this help message"
-    echo "  -p, --install-prerequisites Run prerequisites installation (e.g., Homebrew)"
-    echo "  -a, --install-apps          Install pre-configured apps"
-    echo "  -s, --configure-symlinks    Create symlinks for dotfiles"
-}
-
-# Parse command-line arguments
-while getopts "dhpas" opt; do
-    case "$opt" in
-    d | --dry-run)
-        DRY_RUN=true
+# Parse command line options
+while [[ "$1" != "" ]]; do
+    case "$1" in
+    -h | --help)
+        usage
+        exit 0
         ;;
-    h | --help)
-        HELP=true
+    -f | --force)
+        FORCE=1
         ;;
-    p | --install-prerequisites)
-        INSTALL_PREREQUISITES=true
-        ;;
-    a | --install-apps)
-        INSTALL_APPS=true
-        ;;
-    s | --configure-symlinks)
-        CONFIGURE_SYMLINKS=true
+    -d | --dry-run)
+        DRY_RUN=1
         ;;
     *)
-        error "Invalid option: -$OPTARG"
-        show_help
+        echo "Unknown option: $1"
+        usage
         exit 1
         ;;
     esac
+    shift
 done
 
-# Show help if requested
-if [ "$HELP" = true ]; then
-    show_help
-    exit 0
+# Get the absolute path of the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source utility functions (if available)
+if [ -f "$SCRIPT_DIR/scripts/utils.sh" ]; then
+    . "$SCRIPT_DIR/scripts/utils.sh"
+else
+    echo "Warning: utils.sh not found. Falling back to basic logging."
+    info() { echo "[INFO] $1"; }
+    warning() { echo "[WARNING] $1"; }
+    error() { echo "[ERROR] $1"; }
+    success() { echo "[SUCCESS] $1"; }
 fi
 
-# Dry run mode
-if [ "$DRY_RUN" = true ]; then
-    dry_run
-    exit 0
-fi
+# List of required dependencies (adjust as needed)
+dependencies=("starship" "tmux" "wezterm" "zsh")
+info "Checking required applications..."
+for dep in "${dependencies[@]}"; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+        warning "$dep is not installed. Please install $dep for proper functioning."
+    else
+        info "$dep is installed."
+    fi
+done
 
-# Run each phase based on options
-if [ "$INSTALL_PREREQUISITES" = true ] || [ -z "$INSTALL_PREREQUISITES" ]; then
-    install_prerequisites
-fi
+# Prepare arguments for the symlink script
+SYMLINKS_ARGS=""
+[ "$FORCE" -eq 1 ] && SYMLINKS_ARGS="$SYMLINKS_ARGS --force"
+[ "$DRY_RUN" -eq 1 ] && SYMLINKS_ARGS="$SYMLINKS_ARGS --dry-run"
 
-if [ "$INSTALL_APPS" = true ] || [ -z "$INSTALL_APPS" ]; then
-    install_apps
-fi
+# Run the symlink setup
+info "Setting up symbolic links..."
+bash "$SCRIPT_DIR/scripts/symlinks.sh" $SYMLINKS_ARGS
 
-if [ "$CONFIGURE_SYMLINKS" = true ] || [ -z "$CONFIGURE_SYMLINKS" ]; then
-    configure_symlinks
+if [ $? -eq 0 ]; then
+    success "Setup completed successfully!"
+else
+    error "Setup encountered errors."
+    exit 1
 fi
-
-success "Setup completed successfully!"
-echo $DRY_RUN
